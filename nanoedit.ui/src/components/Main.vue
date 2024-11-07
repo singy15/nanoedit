@@ -30,7 +30,8 @@ async function openDirectory() {
     treelist.value.push({ 
       name: name, 
       handle: handle, 
-      file: handle.kind === "file"
+      file: handle.kind === "file",
+      level: 0,
     });
   }
 }
@@ -72,7 +73,7 @@ async function saveFile() {
       <div>explorer <span class="clickable" @click="openDirectory">[open dir]</span></div>
       <br/>
       <div v-for="item in treelist" class="clickable" @click="openFile(item)">
-        {{ item.name }}
+        {{ "&nbsp;".repeat(item.level) }}{{ item.name }} {{ (item.file)? "" : "/" }}
       </div>
     </div>
     <div class="editor child w20 p1 bc-gray bl bt bb br">
