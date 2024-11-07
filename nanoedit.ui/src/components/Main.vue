@@ -70,7 +70,8 @@ async function saveFile() {
 <template>
   <div class="container root flex-row">
     <div class="tree child w10 p1 bc-gray bl bt bb flex-col">
-      <div>explorer <span class="clickable" @click="openDirectory">[open dir]</span></div>
+      <div>explorer</div>
+      <span class="clickable" @click="openDirectory">[open]</span>
       <br/>
       <div v-for="item in treelist" class="clickable" @click="openFile(item)">
         {{ "&nbsp;".repeat(item.level) }}{{ item.name }} {{ (item.file)? "" : "/" }}
