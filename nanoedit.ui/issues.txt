@@ -2,6 +2,3 @@
     * logo
     * multi language support
     * save status
-    - auto save -> timeout
-
-    

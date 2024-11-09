@@ -1,5 +1,5 @@
 <script setup>
-  import { ref, reactive, onMounted } from "vue";
+  import { ref, reactive, onMounted, nextTick } from "vue";
 import * as monaco from "monaco-editor";
 import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker&inline";
 import jsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker&inline";
@@ -32,6 +32,9 @@ self.MonacoEnvironment = {
 const editorMonaco = ref(null);
 let editorMonacoObj = null;
 
+  // set theme
+  monaco.editor.setTheme("vs-dark");
+
 function createMonacoEditor(targetElement, onChange, language, initialValue = null) {
   let editor = monaco.editor.create(targetElement, {
     value: initialValue != null ? initialValue : "",
@@ -44,9 +47,6 @@ function createMonacoEditor(targetElement, onChange, language, initialValue = nu
   // set tab width
   editor.getModel().updateOptions({ tabSize: 2 });
 
-  // set theme
-  monaco.editor.setTheme("vs-dark");
-
   // add listener
   editor.getModel().onDidChangeContent((event) => {
     onChange(editor, event);
@@ -56,6 +56,7 @@ function createMonacoEditor(targetElement, onChange, language, initialValue = nu
 }
 
 onMounted(() => {
+  /*
   editorMonacoObj = createMonacoEditor(editorMonaco.value, 
     (ed, event) => {
       // console.log(ed.getValue());
@@ -63,6 +64,7 @@ onMounted(() => {
       setSaveTimeout();
     },
     "javascript");
+  */
 });
 
 function languageByExtension(extension) {
@@ -81,12 +83,14 @@ const count = ref(0);
 const treelist = ref([]);
 
 const hdir = ref(null);
+/*
 const editor = reactive({
   text: "",
   hfile: null,
   name: "untitled",
   entry: null,
 });
+*/
 
 const cssExplorerWidth = ref(`18em`);
 const cssEditorWidth = ref(`calc(100% - 18em)`);
@@ -119,24 +123,7 @@ async function openDirectory() {
   // }
 }
 
-async function openFile(item) {
-  editor.hfile = item.handle;
-  editor.name = item.name;
-  editor.entry = item;
 
-  const file = await item.handle.getFile();
-  const reader = new FileReader();
-  reader.addEventListener("load", () => {
-    // editor.text = reader.result;
-    let ext = item.name.split(".");
-    if(ext.length > 0 && languageByExtension(ext.slice(-1)[0])) {
-      var model = editorMonacoObj.getModel();
-      monaco.editor.setModelLanguage(model, languageByExtension(ext.slice(-1)[0]));
-    }
-    editorMonacoObj.setValue(reader.result);
-  });
-  reader.readAsText(file);
-}
 
 async function deleteEntry() {
   if(!editor.entry) return;
@@ -173,9 +160,9 @@ function onTab() {
   obj.selectionEnd = cursorPosition + 2;
 }
 
-async function saveFile() {
-  let writableStream = await editor.hfile.createWritable();
-  await writableStream.write(editor.text);
+async function saveFile(hfile, text) {
+  let writableStream = await hfile.createWritable();
+  await writableStream.write(text);
   await writableStream.close();
   console.log("file saved");
 }
@@ -222,29 +209,109 @@ const selectedItem = ref(null);
 async function clickTreeItem(item) {
   if(item.file) {
     openFile(item)
-  //} else {
-  //  toggleTreeExpand(item);
   }
 
   selectedItem.value = item;
 }
 
-const timeoutSave = ref(null);
 
-function setSaveTimeout() {
-  if(!autosaveEnabled.value) return;
+function setSaveTimeout(tabitem, force = false) {
+  if(!autosaveEnabled.value && !force) return;
   
-  if(timeoutSave.value) {
-    clearTimeout(timeoutSave.value);
+  if(tabitem.timeoutSave) {
+    clearTimeout(tabitem.timeoutSave);
   }
 
-  timeoutSave.value = setTimeout(() => {
-    saveFile();
-    timeoutSave.value = null;
+  tabitem.timeoutSave = setTimeout(() => {
+    saveFile(tabitem.entry.handle, tabitem.editor.getValue());
+    tabitem.timeoutSave = null;
   }, 2000);
 }
 
 const autosaveEnabled = ref(false);
+
+// let tabfirst = { entry: { name: "Main.vue", hfile: null, }, preview: false, };
+const tabs = reactive({
+  tabitems: [
+    // tabfirst,
+    // { entry: { name: "index.html", hfile: null, }, preview: false, },
+    // { entry: { name: "vite.svg", hfile: null, }, preview: false, },
+  ],
+  selected: null //tabfirst,
+});
+
+async function addTab(item) {
+
+
+  const file = await item.handle.getFile();
+  const reader = new FileReader();
+  reader.addEventListener("load", () => {
+    // editor.text = reader.result;
+    let ext = item.name.split(".");
+    if(ext.length > 0 && languageByExtension(ext.slice(-1)[0])) {
+      var model = editorMonacoObj.getModel();
+      monaco.editor.setModelLanguage(model, languageByExtension(ext.slice(-1)[0]));
+    }
+    editorMonacoObj.setValue(reader.result);
+  });
+  reader.readAsText(file);
+
+
+}
+
+async function openFile(item) {
+  //editor.hfile = item.handle;
+  //editor.name = item.name;
+  //editor.entry = item;
+
+  let tabitem = {
+    entry: item,
+    preview: false,
+  };
+
+  tabs.tabitems.push(tabitem);
+  tabs.selected = tabitem;
+
+  nextTick(async () => {
+    let editor = createMonacoEditor(
+      editorMonaco.value[tabs.tabitems.indexOf(tabitem)], 
+      (ed, val) => {
+        console.log("timeout");
+        setSaveTimeout(tabitem);
+      }, 
+      "javascript");
+    tabitem.editor = editor;
+
+    const file = await item.handle.getFile();
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      // editor.text = reader.result;
+      let ext = item.name.split(".");
+      if(ext.length > 0 && languageByExtension(ext.slice(-1)[0])) {
+        var model = editor.getModel();
+        monaco.editor.setModelLanguage(model, languageByExtension(ext.slice(-1)[0]));
+      }
+      editor.setValue(reader.result);
+    });
+    reader.readAsText(file);
+  });
+}
+
+function clickTab(tabitem) {
+  tabs.selected = tabitem;
+}
+
+function deleteTab(tabitem) {
+  let idx = tabs.tabitems.indexOf(tabitem);
+  tabs.tabitems = tabs.tabitems.filter(t => t != tabitem);
+  nextTick(() => {
+    tabitem.editor.getModel().dispose();
+    tabitem.editor.dispose();
+    if(idx > 0) {
+      tabs.selected = tabs.tabitems[idx - 1];
+    }
+  })
+}
 
 </script>
 
@@ -271,16 +338,27 @@ const autosaveEnabled = ref(false);
         {{ item.file ? "" : "/" }}
       </div>
     </div>
-    <div ref="editorMonaco" class="editor child w20 p1 bc-gray bl bt bb br" @keydown.ctrl.s.prevent="saveFile">
-      <textarea
-        ref="editorTextarea"
-        class="editor-textarea"
-        v-model="editor.text"
-        spellcheck="false"
-        @keydown.tab.prevent="onTab"
-        @keydown.ctrl.s.prevent="saveFile"
-        style="display:none"
-      ></textarea>
+    <div class="editor child w20 p1 bc-gray bl bt bb br flex-col">
+      <div class="child flex-row">
+
+        <div :class="['tabitem', 'clickable', 'br', 'bc-gray', (tabitem != tabs.selected)? 'bb' : '' ]" 
+          v-for="tabitem in tabs.tabitems"
+          @click="clickTab(tabitem)">
+          <span class="tabname">{{ tabitem.entry.name }}</span>
+          <span @click.stop="deleteTab(tabitem)">X</span>
+        </div>
+        <!--
+        <div class="tabitem br bb bc-gray">index.html</div>
+        <div class="tabitem br bb bc-gray">vite.svg</div>
+        -->
+      </div>
+      <template v-for="tabitem in tabs.tabitems">
+      <div ref="editorMonaco" 
+        v-show="tabitem == tabs.selected"
+        style="width:100%; height:calc(100% - 1.5em);" 
+        @keydown.ctrl.s.prevent.stop="setSaveTimeout(tabitem, true)">
+      </div>
+      </template>
     </div>
   </div>
 </template>
@@ -413,5 +491,18 @@ const autosaveEnabled = ref(false);
     display: inline-block;
     width: 1em;
     text-align: center;
+  }
+
+  .tabitem {
+    display: inline-block;
+    height: 1.5em;
+    text-align: center;
+    vertical-align: middle;
+    box-sizing: border-box;
+    padding: 0 1em;
+  }
+
+  .tabname {
+    padding-right: 0.5em;
   }
 </style>
