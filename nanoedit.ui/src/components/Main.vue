@@ -70,6 +70,7 @@ function languageByExtension(extension) {
     "html" : "html",
     "vue" : "html",
     "css" : "css",
+    "txt" : "txt",
   }
   return langs[extension];
 }
@@ -140,11 +141,17 @@ async function deleteEntry() {
   if(!editor.entry) return;
   if(!editor.entry.file) return;
   if(!editor.entry.parent) return;
+
+  if(!window.confirm("Delete opened file, are you sure?")) return;
+
   // editor.entry.parent.removeEntry(editor.entry.name);
   editor.entry.handle.remove();
 }
 
 async function createNewFile(filename, parentItem) {
+  if(!parentItem) return;
+  if(parentItem.file) return;
+
   let hfile = await parentItem.handle.getFileHandle(filename, { create: true });
   let writableStream = await hfile.createWritable();
   await writableStream.write("");
@@ -209,25 +216,39 @@ async function toggleTreeExpand(item) {
   }
 }
 
+const selectedItem = ref(null);
+
 async function clickTreeItem(item) {
   if(item.file) {
     openFile(item)
-  } else {
-    toggleTreeExpand(item);
+  //} else {
+  //  toggleTreeExpand(item);
   }
+
+  selectedItem.value = item;
 }
+
+
 </script>
 
 <template>
   <div class="container root flex-row">
     <div class="tree child w10 p1 bc-gray bl bt bb flex-col">
-      <span class="clickable" @click="openDirectory">[open]</span>
-      <span class="clickable" @click="deleteEntry">[delete]</span>
+      <div class="child flex-row">
+      <span class="clickable button1" @click="openDirectory">OPEN</span>
+      <span class="clickable button1 ml1" @click="createNewFile(prompt(), selectedItem)">NEW</span>
+      <span class="clickable button1 ml1" @click="deleteEntry">DEL</span>
+      </div>
       <br />
       <div v-for="item in treelist" class="clickable" @click="clickTreeItem(item)">
-        <span style="opacity:0.3">{{ "|&nbsp;".repeat(item.level) }}</span>{{ item.name }}
+        
+        <span style="opacity:0.3">{{ "&nbsp;|&nbsp;".repeat(item.level) }}</span>
+        <span v-if="!item.file" class="folder" 
+          @click.stop="toggleTreeExpand(item)">
+          {{ (item.expand)? "-" : "+" }}&nbsp;
+        </span>
+        <span :style="{ textDecoration: (selectedItem == item)? 'underline' : '' }">&nbsp;{{ item.name }}</span>
         {{ item.file ? "" : "/" }}
-        <span v-if="!item.file" @click.stop="createNewFile(prompt(), item)">+</span>
       </div>
     </div>
     <div ref="editorMonaco" 
@@ -289,6 +310,7 @@ async function clickTreeItem(item) {
 
 .editor {
   width: v-bind(cssEditorWidth);
+  padding: 0;
 }
 
 .editor-textarea {
@@ -305,5 +327,26 @@ async function clickTreeItem(item) {
 
 .clickable {
   cursor: pointer;
+}
+
+.button1 {
+  display: inline-block;
+  min-width: 3em;
+  background-color: #444;
+  text-align: center;
+  vertical-align: middle;
+  font-size: 0.9em;
+  padding: 3px;
+}
+
+.ml1 { margin-left: 1em; }
+.mr1 { margin-right: 1em; }
+.mt1 { margin-top: 1em; }
+.mb1 { margin-bottom: 1em; }
+
+.folder {
+  display: inline-block;
+  width: 1em;
+  text-align: center;
 }
 </style>
