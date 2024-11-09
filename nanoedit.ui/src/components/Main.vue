@@ -83,6 +83,7 @@ const editor = reactive({
   text: "",
   hfile: null,
   name: "untitled",
+  entry: null,
 });
 
 const cssExplorerWidth = ref(`18em`);
@@ -119,6 +120,7 @@ async function openDirectory() {
 async function openFile(item) {
   editor.hfile = item.handle;
   editor.name = item.name;
+  editor.entry = item;
 
   const file = await item.handle.getFile();
   const reader = new FileReader();
@@ -132,6 +134,25 @@ async function openFile(item) {
     editorMonacoObj.setValue(reader.result);
   });
   reader.readAsText(file);
+}
+
+async function deleteEntry() {
+  if(!editor.entry) return;
+  if(!editor.entry.file) return;
+  if(!editor.entry.parent) return;
+  // editor.entry.parent.removeEntry(editor.entry.name);
+  editor.entry.handle.remove();
+}
+
+async function createNewFile(filename, parentItem) {
+  let hfile = await parentItem.handle.getFileHandle(filename, { create: true });
+  let writableStream = await hfile.createWritable();
+  await writableStream.write("");
+  await writableStream.close();
+  console.log("file created");
+  await foldTree(parentItem);
+  await expandTree(parentItem);
+  return hfile;
 }
 
 const editorTextarea = ref(null);
@@ -168,6 +189,10 @@ async function expandTree(item) {
   item.expand = true;
 }
 
+function prompt() {
+  return window.prompt();
+}
+
 async function foldTree(item) {
   if(item.file) return;
   let children = treelist.value.filter(i => i.parent == item);
@@ -197,10 +222,12 @@ async function clickTreeItem(item) {
   <div class="container root flex-row">
     <div class="tree child w10 p1 bc-gray bl bt bb flex-col">
       <span class="clickable" @click="openDirectory">[open]</span>
+      <span class="clickable" @click="deleteEntry">[delete]</span>
       <br />
       <div v-for="item in treelist" class="clickable" @click="clickTreeItem(item)">
         <span style="opacity:0.3">{{ "|&nbsp;".repeat(item.level) }}</span>{{ item.name }}
         {{ item.file ? "" : "/" }}
+        <span v-if="!item.file" @click.stop="createNewFile(prompt(), item)">+</span>
       </div>
     </div>
     <div ref="editorMonaco" 

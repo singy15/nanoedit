@@ -1,0 +1,6 @@
+    - create/delete new file
+    - tab editor
+    - logo
+    - multi language support
+    - save status
+    - auto save
