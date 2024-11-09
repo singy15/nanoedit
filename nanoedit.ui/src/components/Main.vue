@@ -1,11 +1,11 @@
 <script setup>
 import { ref, reactive, onMounted } from "vue";
 import * as monaco from "monaco-editor";
-import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
-import jsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker";
-import cssWorker from "monaco-editor/esm/vs/language/css/css.worker?worker";
-import htmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker";
-import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
+import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker&inline";
+import jsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker&inline";
+import cssWorker from "monaco-editor/esm/vs/language/css/css.worker?worker&inline";
+import htmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker&inline";
+import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker&inline";
 
 self.MonacoEnvironment = {
   getWorker(_, label) {
@@ -24,10 +24,6 @@ self.MonacoEnvironment = {
     return new editorWorker();
   },
 };
-// monaco.editor.create(document.getElementById('container'), {
-//  value: "function hello() {\n\talert('Hello world!');\n}",
-//  language: 'javascript'
-// })
 
 // defineProps({
 //   msg: String,
@@ -41,11 +37,17 @@ function createMonacoEditor(targetElement, onChange, language, initialValue = nu
     value: initialValue != null ? initialValue : "",
     language: language,
     automaticLayout: true,
-    fontSize: 13
+    fontSize: 13,
+    tabSize: 2,
   });
 
+  // set tab width
+  editor.getModel().updateOptions({ tabSize: 2 });
+
+  // set theme
   monaco.editor.setTheme("vs-dark");
 
+  // add listener
   editor.getModel().onDidChangeContent((event) => {
     onChange(editor, event);
   });
@@ -83,8 +85,8 @@ const editor = reactive({
   name: "untitled",
 });
 
-const cssExplorerWidth = ref(`15em`);
-const cssEditorWidth = ref(`calc(100% - 15em)`);
+const cssExplorerWidth = ref(`18em`);
+const cssEditorWidth = ref(`calc(100% - 18em)`);
 
 async function openDirectory() {
   hdir.value = await window.showDirectoryPicker({ mode: "readwrite" });
@@ -254,6 +256,8 @@ async function clickTreeItem(item) {
 .tree {
   width: v-bind(cssExplorerWidth);
   /* font-family: monospace; */
+  overflow: auto;
+  white-space: pre;
 }
 
 .editor {
