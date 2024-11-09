@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted } from "vue";
+  import { ref, reactive, onMounted } from "vue";
 import * as monaco from "monaco-editor";
 import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker&inline";
 import jsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker&inline";
@@ -58,8 +58,9 @@ function createMonacoEditor(targetElement, onChange, language, initialValue = nu
 onMounted(() => {
   editorMonacoObj = createMonacoEditor(editorMonaco.value, 
     (ed, event) => {
-      console.log(ed.getValue());
+      // console.log(ed.getValue());
       editor.text = ed.getValue();
+      setSaveTimeout();
     },
     "javascript");
 });
@@ -228,6 +229,22 @@ async function clickTreeItem(item) {
   selectedItem.value = item;
 }
 
+const timeoutSave = ref(null);
+
+function setSaveTimeout() {
+  if(!autosaveEnabled.value) return;
+  
+  if(timeoutSave.value) {
+    clearTimeout(timeoutSave.value);
+  }
+
+  timeoutSave.value = setTimeout(() => {
+    saveFile();
+    timeoutSave.value = null;
+  }, 2000);
+}
+
+const autosaveEnabled = ref(false);
 
 </script>
 
@@ -235,15 +252,18 @@ async function clickTreeItem(item) {
   <div class="container root flex-row">
     <div class="tree child w10 p1 bc-gray bl bt bb flex-col">
       <div class="child flex-row">
-      <span class="clickable button1" @click="openDirectory">OPEN</span>
-      <span class="clickable button1 ml1" @click="createNewFile(prompt(), selectedItem)">NEW</span>
-      <span class="clickable button1 ml1" @click="deleteEntry">DEL</span>
+        <span class="clickable button1" @click="openDirectory">OPEN</span>
+        <span class="clickable button1 ml1" @click="createNewFile(prompt(), selectedItem)">NEW</span>
+        <span class="clickable button1 ml1" @click="deleteEntry">DEL</span>
+      </div>
+      <div>
+        <label><input type="checkbox" v-model="autosaveEnabled"/>autosave</label>
       </div>
       <br />
       <div v-for="item in treelist" class="clickable" @click="clickTreeItem(item)">
-        
+
         <span style="opacity:0.3">{{ "&nbsp;|&nbsp;".repeat(item.level) }}</span>
-        <span v-if="!item.file" class="folder" 
+        <span v-if="!item.file" class="folder"
           @click.stop="toggleTreeExpand(item)">
           {{ (item.expand)? "-" : "+" }}&nbsp;
         </span>
@@ -251,9 +271,7 @@ async function clickTreeItem(item) {
         {{ item.file ? "" : "/" }}
       </div>
     </div>
-    <div ref="editorMonaco" 
-      class="editor child w20 p1 bc-gray bl bt bb br"
-      @keydown.ctrl.s.prevent="saveFile">
+    <div ref="editorMonaco" class="editor child w20 p1 bc-gray bl bt bb br" @keydown.ctrl.s.prevent="saveFile">
       <textarea
         ref="editorTextarea"
         class="editor-textarea"
@@ -268,85 +286,132 @@ async function clickTreeItem(item) {
 </template>
 
 <style scoped>
-.root {
-  width: 100%;
-  height: 100%;
-}
+  .root {
+    width: 100%;
+    height: 100%;
+  }
 
-.container {
-  display: flex;
-}
+  .container {
+    display: flex;
+  }
 
-.child {
-  display: flex;
-}
+  .child {
+    display: flex;
+  }
 
-.w10 { width: 10em; }
-.w20 { width: 20em; }
-.h10 { height: 10em; }
-.h20 { height: 20em; }
+  .w10 {
+    width: 10em;
+  }
 
-.p1 { padding: 1em; }
+  .w20 {
+    width: 20em;
+  }
 
-.bg-red { background-color: red; }
+  .h10 {
+    height: 10em;
+  }
 
-.bc-light { border-color: #ccc !important; }
-.bc-gray { border-color: #888 !important; }
+  .h20 {
+    height: 20em;
+  }
 
-.bl { border-left: solid 1px; }
-.br { border-right: solid 1px; }
-.bt { border-top: solid 1px; }
-.bb { border-bottom: solid 1px; }
+  .p1 {
+    padding: 1em;
+  }
 
-.flex-row { flex-direction: row; }
-.flex-col { flex-direction: column; }
+  .bg-red {
+    background-color: red;
+  }
 
-.tree {
-  width: v-bind(cssExplorerWidth);
-  /* font-family: monospace; */
-  overflow: auto;
-  white-space: pre;
-}
+  .bc-light {
+    border-color: #ccc !important;
+  }
 
-.editor {
-  width: v-bind(cssEditorWidth);
-  padding: 0;
-}
+  .bc-gray {
+    border-color: #888 !important;
+  }
 
-.editor-textarea {
-  width: 100%;
-  height: 100%;
-  border: none;
-  background-color: #333;
-  resize: none;
-  outline: none;
-  white-space: pre;
-  font-size: 0.95em;
-  line-height: 1.2em;
-}
+  .bl {
+    border-left: solid 1px;
+  }
 
-.clickable {
-  cursor: pointer;
-}
+  .br {
+    border-right: solid 1px;
+  }
 
-.button1 {
-  display: inline-block;
-  min-width: 3em;
-  background-color: #444;
-  text-align: center;
-  vertical-align: middle;
-  font-size: 0.9em;
-  padding: 3px;
-}
+  .bt {
+    border-top: solid 1px;
+  }
 
-.ml1 { margin-left: 1em; }
-.mr1 { margin-right: 1em; }
-.mt1 { margin-top: 1em; }
-.mb1 { margin-bottom: 1em; }
+  .bb {
+    border-bottom: solid 1px;
+  }
 
-.folder {
-  display: inline-block;
-  width: 1em;
-  text-align: center;
-}
+  .flex-row {
+    flex-direction: row;
+  }
+
+  .flex-col {
+    flex-direction: column;
+  }
+
+  .tree {
+    width: v-bind(cssExplorerWidth);
+    /* font-family: monospace; */
+    overflow: auto;
+    white-space: pre;
+  }
+
+  .editor {
+    width: v-bind(cssEditorWidth);
+    padding: 0;
+  }
+
+  .editor-textarea {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background-color: #333;
+    resize: none;
+    outline: none;
+    white-space: pre;
+    font-size: 0.95em;
+    line-height: 1.2em;
+  }
+
+  .clickable {
+    cursor: pointer;
+  }
+
+  .button1 {
+    display: inline-block;
+    min-width: 3em;
+    background-color: #444;
+    text-align: center;
+    vertical-align: middle;
+    font-size: 0.9em;
+    padding: 3px;
+  }
+
+  .ml1 {
+    margin-left: 1em;
+  }
+
+  .mr1 {
+    margin-right: 1em;
+  }
+
+  .mt1 {
+    margin-top: 1em;
+  }
+
+  .mb1 {
+    margin-bottom: 1em;
+  }
+
+  .folder {
+    display: inline-block;
+    width: 1em;
+    text-align: center;
+  }
 </style>

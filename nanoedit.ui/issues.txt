@@ -1,5 +1,7 @@
-    - tab editor
-    - logo
-    - multi language support
-    - save status
-    - auto save
+    * tab editor
+    * logo
+    * multi language support
+    * save status
+    - auto save -> timeout
+
+    
