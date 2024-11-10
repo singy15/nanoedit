@@ -341,9 +341,8 @@ function deleteTab(tabitem) {
     <div class="editor child w20 p1 bc-gray bl bt bb br flex-col">
       <div class="child flex-row">
 
-        <div :class="['tabitem', 'clickable', 'br', 'bc-gray', (tabitem != tabs.selected)? 'bb' : '' ]" 
-          v-for="tabitem in tabs.tabitems"
-          @click="clickTab(tabitem)">
+        <div :class="['tabitem', 'clickable', 'br', 'bc-gray', (tabitem != tabs.selected)? 'bb' : '' ]"
+          v-for="tabitem in tabs.tabitems" @click="clickTab(tabitem)">
           <span class="tabname">{{ tabitem.entry.name }}</span>
           <span @click.stop="deleteTab(tabitem)">X</span>
         </div>
@@ -353,11 +352,9 @@ function deleteTab(tabitem) {
         -->
       </div>
       <template v-for="tabitem in tabs.tabitems">
-      <div ref="editorMonaco" 
-        v-show="tabitem == tabs.selected"
-        style="width:100%; height:calc(100% - 1.5em);" 
-        @keydown.ctrl.s.prevent.stop="setSaveTimeout(tabitem, true)">
-      </div>
+        <div ref="editorMonaco" v-show="tabitem == tabs.selected" style="width:100%; height:calc(100% - 1.5em);"
+          @keydown.ctrl.s.prevent.stop="setSaveTimeout(tabitem, true)">
+        </div>
       </template>
     </div>
   </div>

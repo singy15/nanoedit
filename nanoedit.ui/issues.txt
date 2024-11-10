@@ -1,4 +1,4 @@
-    * tab editor
-    * logo
-    * multi language support
-    * save status
+* logo
+* multi language support
+* save status
+* bug: tab not selected on closing
