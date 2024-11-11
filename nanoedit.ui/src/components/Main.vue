@@ -225,6 +225,8 @@ function setSaveTimeout(tabitem, force = false) {
   tabitem.timeoutSave = setTimeout(() => {
     saveFile(tabitem.entry.handle, tabitem.editor.getValue());
     tabitem.timeoutSave = null;
+    let ti = tabs.tabitems[tabs.tabitems.indexOf(tabitem)];
+    ti.modified = false;
   }, 2000);
 }
 
@@ -267,16 +269,18 @@ async function openFile(item) {
   let tabitem = {
     entry: item,
     preview: false,
+    modified: false,
   };
 
   tabs.tabitems.push(tabitem);
   tabs.selected = tabitem;
+  let ti = tabs.tabitems[tabs.tabitems.indexOf(tabitem)];
 
   nextTick(async () => {
     let editor = createMonacoEditor(
       editorMonaco.value[tabs.tabitems.indexOf(tabitem)], 
       (ed, val) => {
-        console.log("timeout");
+        ti.modified = true;
         setSaveTimeout(tabitem);
       }, 
       "javascript");
@@ -343,7 +347,7 @@ function deleteTab(tabitem) {
 
         <div :class="['tabitem', 'clickable', 'br', 'bc-gray', (tabitem != tabs.selected)? 'bb' : '' ]"
           v-for="tabitem in tabs.tabitems" @click="clickTab(tabitem)">
-          <span class="tabname">{{ tabitem.entry.name }}</span>
+          <span class="tabname">{{ (tabitem.modified)? "*" : "" }}{{ tabitem.entry.name }}</span>
           <span @click.stop="deleteTab(tabitem)">X</span>
         </div>
         <!--

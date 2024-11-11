@@ -2,3 +2,12 @@
 * multi language support
 * save status
 * bug: tab not selected on closing
+* multibyte support: utf-8 / shift-jis
+* save status marker
+* save notification
+* bug: syntax not properly applied
+
+
+
+
+
