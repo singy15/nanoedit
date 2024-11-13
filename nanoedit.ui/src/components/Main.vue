@@ -1,11 +1,12 @@
 <script setup>
-  import { ref, reactive, onMounted, nextTick } from "vue";
+import { ref, reactive, onMounted, nextTick } from "vue";
 import * as monaco from "monaco-editor";
 import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker&inline";
 import jsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker&inline";
 import cssWorker from "monaco-editor/esm/vs/language/css/css.worker?worker&inline";
 import htmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker&inline";
 import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker&inline";
+import uuid4 from "../uuid4.js";
 
 self.MonacoEnvironment = {
   getWorker(_, label) {
@@ -47,10 +48,10 @@ function createMonacoEditor(targetElement, onChange, language, initialValue = nu
   // set tab width
   editor.getModel().updateOptions({ tabSize: 2 });
 
-  // add listener
-  editor.getModel().onDidChangeContent((event) => {
-    onChange(editor, event);
-  });
+  // // add listener
+  // editor.getModel().onDidChangeContent((event) => {
+  //   onChange(editor, event);
+  // });
   
   return editor;
 }
@@ -170,8 +171,10 @@ async function saveFile(hfile, text) {
 async function expandTree(item) {
   let idx = treelist.value.indexOf(item);
   let subtree = [];
+  let subtreeDirs = [];
   for await (let [name, handle] of item.handle) {
-    subtree.push({
+    let addTarget = (handle.kind === "file")? subtree : subtreeDirs;
+    addTarget.push({
       name: name,
       handle: handle,
       file: handle.kind === "file",
@@ -180,7 +183,15 @@ async function expandTree(item) {
       expand: false,
     });
   }
-  treelist.value.splice(idx + 1, 0, ...subtree);
+
+  subtree.sort((a,b) => {
+    return (a.name === b.name)? 0 : ((a.name > b.name)? 1 : -1);
+  });
+  subtreeDirs.sort((a,b) => {
+    return (a.name === b.name)? 0 : ((a.name > b.name)? 1 : -1);
+  });
+
+  treelist.value.splice(idx + 1, 0, ...[...subtreeDirs, ...subtree]);
   item.expand = true;
 }
 
@@ -266,7 +277,14 @@ async function openFile(item) {
   //editor.name = item.name;
   //editor.entry = item;
 
+  let existing = tabs.tabitems.filter(t => t.entry == item);
+  if(existing.length > 0) {
+    tabs.selected = existing[0];
+    return; 
+  }
+
   let tabitem = {
+    oid: uuid4(),
     entry: item,
     preview: false,
     modified: false,
@@ -277,25 +295,43 @@ async function openFile(item) {
   let ti = tabs.tabitems[tabs.tabitems.indexOf(tabitem)];
 
   nextTick(async () => {
-    let editor = createMonacoEditor(
-      editorMonaco.value[tabs.tabitems.indexOf(tabitem)], 
-      (ed, val) => {
-        ti.modified = true;
-        setSaveTimeout(tabitem);
-      }, 
-      "javascript");
-    tabitem.editor = editor;
-
     const file = await item.handle.getFile();
     const reader = new FileReader();
     reader.addEventListener("load", () => {
       // editor.text = reader.result;
+
       let ext = item.name.split(".");
+      
+      let language = "text";
+
       if(ext.length > 0 && languageByExtension(ext.slice(-1)[0])) {
-        var model = editor.getModel();
-        monaco.editor.setModelLanguage(model, languageByExtension(ext.slice(-1)[0]));
+        // var model = editor.getModel();
+        // monaco.editor.setModelLanguage(model, languageByExtension(ext.slice(-1)[0]));
+        language = languageByExtension(ext.slice(-1)[0]);
       }
+
+      let editor = createMonacoEditor(
+        /*editorMonaco.value[tabs.tabitems.indexOf(tabitem)], */
+        document.querySelector(`#editor-${ti.oid}`),
+        (ed, val) => {
+          ti.modified = true;
+          setSaveTimeout(tabitem);
+        }, 
+        language);
+      tabitem.editor = editor;
+
       editor.setValue(reader.result);
+
+
+
+      // add listener
+      editor.getModel().onDidChangeContent((event) => {
+        ((ed, val) => {
+          ti.modified = true;
+          setSaveTimeout(tabitem);
+        })(editor, event)
+      });
+      
     });
     reader.readAsText(file);
   });
@@ -309,10 +345,12 @@ function deleteTab(tabitem) {
   let idx = tabs.tabitems.indexOf(tabitem);
   tabs.tabitems = tabs.tabitems.filter(t => t != tabitem);
   nextTick(() => {
-    tabitem.editor.getModel().dispose();
-    tabitem.editor.dispose();
+    // tabitem.editor.getModel().dispose();
+    // tabitem.editor.dispose();
     if(idx > 0) {
       tabs.selected = tabs.tabitems[idx - 1];
+    } else if(tabs.tabitems.length > 0) {
+      tabs.selected = tabs.tabitems[0];
     }
   })
 }
@@ -348,15 +386,15 @@ function deleteTab(tabitem) {
         <div :class="['tabitem', 'clickable', 'br', 'bc-gray', (tabitem != tabs.selected)? 'bb' : '' ]"
           v-for="tabitem in tabs.tabitems" @click="clickTab(tabitem)">
           <span class="tabname">{{ (tabitem.modified)? "*" : "" }}{{ tabitem.entry.name }}</span>
-          <span @click.stop="deleteTab(tabitem)">X</span>
+          <span v-if="tabs.selected == tabitem" @click.stop="deleteTab(tabitem)">X</span>
         </div>
         <!--
         <div class="tabitem br bb bc-gray">index.html</div>
         <div class="tabitem br bb bc-gray">vite.svg</div>
         -->
       </div>
-      <template v-for="tabitem in tabs.tabitems">
-        <div ref="editorMonaco" v-show="tabitem == tabs.selected" style="width:100%; height:calc(100% - 1.5em);"
+      <template v-for="tabitem in tabs.tabitems" :key="tabitem.oid">
+        <div :id="`editor-${tabitem.oid}`" :style="{width:`100%`, height:`calc(100% - 1.5em)`, display:(tabitem == tabs.selected)? `inherit` : `none`}"
           @keydown.ctrl.s.prevent.stop="setSaveTimeout(tabitem, true)">
         </div>
       </template>
