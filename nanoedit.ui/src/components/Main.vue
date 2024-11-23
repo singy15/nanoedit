@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted, nextTick } from "vue";
+  import { ref, reactive, onMounted, nextTick } from "vue";
 import * as monaco from "monaco-editor";
 import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker&inline";
 import jsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker&inline";
@@ -7,6 +7,10 @@ import cssWorker from "monaco-editor/esm/vs/language/css/css.worker?worker&inlin
 import htmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker&inline";
 import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker&inline";
 import uuid4 from "../uuid4.js";
+import prettier from "prettier/standalone";
+import prettierPluginHtml from "prettier/plugins/html";
+import prettierPluginEstree from "prettier/plugins/estree";
+import prettierPluginBabel from "prettier/plugins/babel";
 
 self.MonacoEnvironment = {
   getWorker(_, label) {
@@ -33,8 +37,52 @@ self.MonacoEnvironment = {
 const editorMonaco = ref(null);
 let editorMonacoObj = null;
 
-  // set theme
-  monaco.editor.setTheme("vs-dark");
+// set theme
+monaco.editor.setTheme("vs-dark");
+
+let ps;
+let formatVue;
+let formatJs;
+(async () => {
+  ps = prettier; //await import('prettier/standalone');
+  const plugins = [
+    prettierPluginHtml, //await import('prettier/plugins/html'),
+    prettierPluginEstree, //await import('prettier/plugins/estree'),
+    prettierPluginBabel, //await import('prettier/plugins/babel'),
+  ];
+
+  /*
+  console.log(await ps.format(`
+<div>
+            <span>aaa</span>
+</div>
+`, { parser: "html", plugins, tabWidth: 2 }));
+
+
+  console.log(await ps.format(`
+function foo() {
+          console.log(1234);
+}
+`, { parser: "babel", plugins, tabWidth: 2 }));
+  */
+
+  formatVue = async (srcText) => {
+    return await ps.format(srcText, { 
+      parser: "vue", 
+      plugins, 
+      tabWidth: 2 });
+  };
+
+  formatJs = async (srcText) => {
+    return await ps.format(srcText, { 
+      parser: "babel", 
+      plugins, 
+      tabWidth: 2 });
+  };
+})();
+
+
+
 
 function createMonacoEditor(targetElement, onChange, language, initialValue = null) {
   let editor = monaco.editor.create(targetElement, {
@@ -53,6 +101,33 @@ function createMonacoEditor(targetElement, onChange, language, initialValue = nu
   //   onChange(editor, event);
   // });
   
+  // setup formatter
+  setTimeout(() => {
+    console.log("vue formatter loaded!");
+    monaco.languages.registerDocumentFormattingEditProvider('html', {
+      async provideDocumentFormattingEdits(model) {
+        let text = await formatVue(model.getValue());
+        return [{
+          range: model.getFullModelRange(),
+          text
+        }];
+      }
+    });
+  }, 1000);
+
+  setTimeout(() => {
+    console.log("js formatter loaded!");
+    monaco.languages.registerDocumentFormattingEditProvider('javascript', {
+      async provideDocumentFormattingEdits(model) {
+        let text = await formatJs(model.getValue());
+        return [{
+          range: model.getFullModelRange(),
+          text
+        }];
+      }
+    });
+  }, 1000);
+
   return editor;
 }
 
@@ -394,7 +469,8 @@ function deleteTab(tabitem) {
         -->
       </div>
       <template v-for="tabitem in tabs.tabitems" :key="tabitem.oid">
-        <div :id="`editor-${tabitem.oid}`" :style="{width:`100%`, height:`calc(100% - 1.5em)`, display:(tabitem == tabs.selected)? `inherit` : `none`}"
+        <div :id="`editor-${tabitem.oid}`"
+          :style="{width:`100%`, height:`calc(100% - 1.5em)`, display:(tabitem == tabs.selected)? `inherit` : `none`}"
           @keydown.ctrl.s.prevent.stop="setSaveTimeout(tabitem, true)">
         </div>
       </template>
