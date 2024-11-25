@@ -11,6 +11,9 @@ import prettier from "prettier/standalone";
 import prettierPluginHtml from "prettier/plugins/html";
 import prettierPluginEstree from "prettier/plugins/estree";
 import prettierPluginBabel from "prettier/plugins/babel";
+import storageUtil from "../storage-util.js";
+
+const fontSize = ref(storageUtil.getStorage("fontSize", 13));
 
 self.MonacoEnvironment = {
   getWorker(_, label) {
@@ -93,7 +96,7 @@ function createMonacoEditor(
     value: initialValue != null ? initialValue : "",
     language: language,
     automaticLayout: true,
-    fontSize: 13,
+    fontSize: fontSize.value,
     tabSize: 2,
   });
 
@@ -431,23 +434,42 @@ function deleteTab(tabitem) {
     }
   });
 }
+
+const showConfig = ref(true);
+
+function changeFontSize(value) {
+  try {
+    let ivalue = parseInt(value, 10);
+    fontSize.value = ivalue;
+    storageUtil.setStorage("fontSize", fontSize.value);
+  } catch (ex) {}
+}
+
+function openConfig() {
+  showConfig.value = true;
+}
+
+function closeConfig() {
+  showConfig.value = false;
+}
 </script>
 
 <template>
-  <div class="container root flex-row">
+  <div class="container root flex-row" :style="{ fontSize: `${fontSize}px` }">
     <div class="tree child w10 p1 bc-gray bl bt bb flex-col">
       <div class="child flex-row">
-        <span class="clickable button1" @click="openDirectory">OPEN</span>
+        <span class="clickable button1" @click="openDirectory">Open</span>
         <span
           class="clickable button1 ml1"
           @click="createNewFile(prompt(), selectedItem)"
-          >NEW</span
+          >New</span
         >
-        <span class="clickable button1 ml1" @click="deleteEntry">DEL</span>
+        <span class="clickable button1 ml1" @click="deleteEntry">Delete</span>
+        <span class="clickable button1 ml1" @click="openConfig">Config</span>
       </div>
       <div>
         <label
-          ><input type="checkbox" v-model="autosaveEnabled" />autosave</label
+          ><input type="checkbox" v-model="autosaveEnabled" />Autosave</label
         >
       </div>
       <br />
@@ -509,6 +531,22 @@ function deleteTab(tabitem) {
           @keydown.ctrl.s.prevent.stop="setSaveTimeout(tabitem, true)"
         ></div>
       </template>
+    </div>
+  </div>
+
+  <div v-if="showConfig" class="config-screen-container">
+    <div class="config-container">
+      <span>Configuration</span>
+      <br />
+      <label
+        >FontSize:&nbsp;
+        <input
+          :value="fontSize"
+          @change="changeFontSize($event.target.value)"
+        />
+      </label>
+      <br />
+      <span class="clickable button1" @click="closeConfig">Close</span>
     </div>
   </div>
 </template>
@@ -654,5 +692,28 @@ function deleteTab(tabitem) {
 
 .tabname {
   padding-right: 0.5em;
+}
+
+.config-screen-container {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.config-container {
+  background-color: #333;
+  border: solid 1px #555;
+  z-index: 99999;
+  padding: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
 }
 </style>
