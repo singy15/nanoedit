@@ -435,7 +435,7 @@ function deleteTab(tabitem) {
   });
 }
 
-const showConfig = ref(true);
+const showConfig = ref(false);
 
 function changeFontSize(value) {
   try {
