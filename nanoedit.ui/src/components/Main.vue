@@ -110,7 +110,7 @@ function createMonacoEditor(
 
   // setup formatter
   setTimeout(() => {
-    console.log("vue formatter loaded!");
+    // console.log("vue formatter loaded!");
     monaco.languages.registerDocumentFormattingEditProvider("html", {
       async provideDocumentFormattingEdits(model) {
         let text = await formatVue(model.getValue());
@@ -125,7 +125,7 @@ function createMonacoEditor(
   }, 1000);
 
   setTimeout(() => {
-    console.log("js formatter loaded!");
+    // console.log("js formatter loaded!");
     monaco.languages.registerDocumentFormattingEditProvider("javascript", {
       async provideDocumentFormattingEdits(model) {
         let text = await formatJs(model.getValue());
@@ -249,7 +249,7 @@ async function saveFile(hfile, text) {
   let writableStream = await hfile.createWritable();
   await writableStream.write(text);
   await writableStream.close();
-  console.log("file saved");
+  // console.log("file saved");
 }
 
 async function expandTree(item) {
@@ -316,11 +316,18 @@ function setSaveTimeout(tabitem, force = false) {
     clearTimeout(tabitem.timeoutSave);
   }
 
+  // set save timeout
   tabitem.timeoutSave = setTimeout(() => {
     saveFile(tabitem.entry.handle, tabitem.editor.getValue());
+
+    // clear timeout state
     tabitem.timeoutSave = null;
-    let ti = tabs.tabitems[tabs.tabitems.indexOf(tabitem)];
-    ti.modified = false;
+
+    // set modified state
+    let ti = tabs.tabitems.filter((t) => t.oid === tabitem.oid)[0];
+    if (ti) {
+      ti.modified = false;
+    }
   }, 2000);
 }
 
