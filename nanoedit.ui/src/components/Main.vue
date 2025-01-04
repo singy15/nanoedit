@@ -179,7 +179,7 @@ const editor = reactive({
 });
 */
 
-const cssExplorerWidth = ref(`18em`);
+const cssExplorerWidth = ref(`20em`);
 const cssEditorWidth = ref(`calc(100% - 18em)`);
 
 async function openDirectory() {
@@ -463,29 +463,31 @@ function closeConfig() {
 
 <template>
   <div class="container root flex-row" :style="{ fontSize: `${fontSize}px` }">
-    <div class="tree child w10 p1 bc-gray bl bt bb flex-col">
-      <div class="child flex-row">
-        <span class="clickable button1" @click="openDirectory">Open</span>
-        <span
-          class="clickable button1 ml1"
-          @click="createNewFile(prompt(), selectedItem)"
-          >New</span
-        >
-        <span class="clickable button1 ml1" @click="deleteEntry">Delete</span>
-        <span class="clickable button1 ml1" @click="openConfig">Config</span>
-      </div>
-      <div>
-        <label
-          ><input type="checkbox" v-model="autosaveEnabled" />Autosave</label
-        >
+    <div class="tree child w10 bc-gray bl bt bb flex-col">
+      <div class="p1" style="position:sticky; top:0; background-color:#242424;">
+        <div class="child flex-row">
+          <span class="clickable button1" @click="openDirectory">Open</span>
+          <span
+            class="clickable button1 ml1"
+            @click="createNewFile(prompt(), selectedItem)"
+            >New</span
+          >
+          <span class="clickable button1 ml1" @click="deleteEntry">Delete</span>
+          <span class="clickable button1 ml1" @click="openConfig">Config</span>
+        </div>
+        <div>
+          <label
+            ><input type="checkbox" v-model="autosaveEnabled" />Autosave</label
+          >
+        </div>
       </div>
       <br />
       <div
         v-for="item in treelist"
-        class="clickable"
+        class="clickable ml1"
         @click="clickTreeItem(item)"
       >
-        <span style="opacity:0.3">{{
+        <span style="color:#777">{{
           "&nbsp;|&nbsp;".repeat(item.level)
         }}</span>
         <span
@@ -576,8 +578,16 @@ function closeConfig() {
   width: 10em;
 }
 
+.w12 {
+  width: 12em;
+}
+
 .w20 {
   width: 20em;
+}
+
+.w18 {
+  width: 18em;
 }
 
 .h10 {
@@ -590,6 +600,14 @@ function closeConfig() {
 
 .p1 {
   padding: 1em;
+}
+
+.pr2 {
+  padding-right: 2em;
+}
+
+.m1 {
+  margin: 1em;
 }
 
 .bg-red {
@@ -689,8 +707,9 @@ function closeConfig() {
 }
 
 .tabitem {
-  display: inline-block;
-  height: 1.5em;
+  display: flex;
+  align-items: center;
+  height: 2em;
   text-align: center;
   vertical-align: middle;
   box-sizing: border-box;
