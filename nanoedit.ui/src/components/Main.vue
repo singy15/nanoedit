@@ -466,43 +466,143 @@ function closeConfig() {
     <div class="tree child w10 bc-gray bl bt bb flex-col">
       <div class="p1" style="position:sticky; top:0; background-color:#242424;">
         <div class="child flex-row">
-          <span class="clickable button1" @click="openDirectory">Open</span>
           <span
-            class="clickable button1 ml1"
+            class="clickable"
+            @click="
+              cssExplorerWidth = cssExplorerWidth === '20em' ? '4em' : '20em';
+              cssEditorWidth =
+                cssEditorWidth === 'calc(100% - 18em)'
+                  ? 'calc(100% - 2em)'
+                  : 'calc(100% - 18em)';
+            "
+          >
+            <svg
+              style="width:24px; line-height:24px;"
+              viewBox="0 0 64 64"
+              width="24"
+              height="24"
+            >
+              <path
+                d="M14,19 L49,19 M14,32 L49,32 M14,45 L49,45"
+                style="fill:none;stroke:#888;stroke-width:5;"
+              />
+            </svg>
+          </span>
+          <span
+            class="clickable ml1"
+            @click="openDirectory"
+            v-if="cssExplorerWidth === '20em'"
+          >
+            <svg
+              style="width:24px; line-height:24px;"
+              viewBox="0 0 64 64"
+              width="24"
+              height="24"
+            >
+              <path
+                d="M16,32 L48,32 M32,16 L32,48"
+                style="fill:none;stroke:#888;stroke-width:8;stroke-linecap:butt;"
+              />
+            </svg>
+          </span>
+          <span
+            class="clickable ml1"
             @click="createNewFile(prompt(), selectedItem)"
-            >New</span
+            v-if="cssExplorerWidth === '20em'"
           >
+            <svg
+              style="width:24px; line-height:24px;"
+              viewBox="0 0 64 64"
+              width="24"
+              height="24"
+            >
+              <path
+                d="M43,10 L52,19 L44,26 L36,18 z"
+                style="fill:#888;stroke:none;"
+              />
+              <path
+                d="M33,20 L42,29 L25,46 L14,48 L16,37 z"
+                style="fill:#888;stroke:none;"
+              />
+            </svg>
+          </span>
+          <!--
           <span class="clickable button1 ml1" @click="deleteEntry">Delete</span>
-          <span class="clickable button1 ml1" @click="openConfig">Config</span>
-        </div>
-        <div>
-          <label
-            ><input type="checkbox" v-model="autosaveEnabled" />Autosave</label
+          -->
+          <span
+            class="clickable ml1"
+            @click="openConfig"
+            v-if="cssExplorerWidth === '20em'"
           >
+            <svg
+              style="width:24px; height:24px; line-height:24px;"
+              viewBox="0 0 64 64"
+              width="24"
+              height="24"
+            >
+              <path
+                d="M25,14 L17,13 L13,17 L14,25 L 8,29 L 8,35 L14,39 L13,47 L17,51 L25,50 L29,56 L35,56 L39,50 L47,51 L51,47 L50,39 L56,35 L56,29 L50,25 L51,17 L47,13 L39,14 L35, 8 L29, 8 M27.4,20.9 A12.0,12.0 0,0,1 36.6,43.1 A12.0,12.0 0,0,1 27.4,20.9 z"
+                style="fill:#888;stroke:none;"
+              />
+            </svg>
+          </span>
+          <span
+            class="clickable ml1"
+            @click="autosaveEnabled = !autosaveEnabled"
+            v-if="cssExplorerWidth === '20em'"
+          >
+            <svg
+              style="width:24px; height:24px; line-height:24px;"
+              viewBox="0 0 64 64"
+              width="24"
+              height="24"
+              v-if="autosaveEnabled"
+            >
+              <path
+                d="M40,4 L16,36 L32,36 L24,60 L48,28 L32,28 z"
+                style="fill:#eee;stroke:#ccc;stroke-width:0;stroke-linecap:round;stroke-linejoin:round;"
+              />
+            </svg>
+
+            <svg
+              style="width:24px; height:24px; line-height:24px;"
+              viewBox="0 0 64 64"
+              width="24"
+              height="24"
+              v-if="!autosaveEnabled"
+            >
+              <path
+                d="M40,4 L16,36 L32,36 L24,60 L48,28 L32,28 z"
+                style="fill:#888;stroke:#888;stroke-width:0;stroke-linecap:round;stroke-linejoin:round;"
+              />
+            </svg>
+          </span>
         </div>
       </div>
       <br />
-      <div
-        v-for="item in treelist"
-        class="clickable ml1"
-        @click="clickTreeItem(item)"
-      >
-        <span style="color:#777">{{
-          "&nbsp;|&nbsp;".repeat(item.level)
-        }}</span>
-        <span
-          v-if="!item.file"
-          class="folder"
-          @click.stop="toggleTreeExpand(item)"
+      <template v-if="cssExplorerWidth === '20em'">
+        <div
+          v-for="item in treelist"
+          class="clickable ml1"
+          @click="clickTreeItem(item)"
         >
-          {{ item.expand ? "-" : "+" }}&nbsp;
-        </span>
-        <span
-          :style="{ textDecoration: selectedItem == item ? 'underline' : '' }"
-          >&nbsp;{{ item.name }}</span
-        >
-        {{ item.file ? "" : "/" }}
-      </div>
+          <span style="color:#777">{{
+            "&nbsp;|&nbsp;".repeat(item.level)
+          }}</span>
+          <span
+            v-if="!item.file"
+            class="folder"
+            @click.stop="toggleTreeExpand(item)"
+          >
+            {{ item.expand ? "-" : "+" }}&nbsp;
+          </span>
+          <span
+            :style="{ textDecoration: selectedItem == item ? 'underline' : '' }"
+            >&nbsp;{{ item.name }}</span
+          >
+          {{ item.file ? "" : "/" }}
+        </div>
+      </template>
     </div>
     <div class="editor child w20 p1 bc-gray bl bt bb br flex-col">
       <div class="child flex-row">
@@ -686,6 +786,10 @@ function closeConfig() {
 
 .ml1 {
   margin-left: 1em;
+}
+
+.ml2 {
+  margin-left: 2em;
 }
 
 .mr1 {
