@@ -12,6 +12,7 @@ import prettierPluginHtml from "prettier/plugins/html";
 import prettierPluginEstree from "prettier/plugins/estree";
 import prettierPluginBabel from "prettier/plugins/babel";
 import storageUtil from "../storage-util.js";
+import { get, set } from 'idb-keyval';
 
 const fontSize = ref(storageUtil.getStorage("fontSize", 13));
 
@@ -152,6 +153,8 @@ onMounted(() => {
     },
     "javascript");
   */
+
+  openLastDirectory();
 });
 
 function languageByExtension(extension) {
@@ -183,7 +186,13 @@ const cssExplorerWidth = ref(`20em`);
 const cssEditorWidth = ref(`calc(100% - 18em)`);
 
 async function openDirectory() {
-  hdir.value = await window.showDirectoryPicker({ mode: "readwrite" });
+  // const lastHdir = await get('directory');
+  // if(lastHdir && confirm('Open last directory?')) {
+  //   hdir.value = lastHdir;
+  // } else {
+    hdir.value = await window.showDirectoryPicker({ mode: "readwrite" });
+    await set('directory', hdir.value);
+  // }
 
   treelist.value = [];
   let workspace = {
@@ -209,6 +218,43 @@ async function openDirectory() {
   //   });
   // }
 }
+
+async function openLastDirectory() {
+  const lastHdir = await get('directory');
+  if(lastHdir) {
+    hdir.value = lastHdir;
+  } else {
+    return;
+  }
+
+  treelist.value = [];
+  let workspace = {
+    name: "workspace",
+    handle: hdir.value,
+    file: false,
+    level: 0,
+    parent: null,
+    expand: false,
+  };
+  treelist.value.push(workspace);
+
+  expandTree(workspace);
+
+  // for await (let [name, handle] of hdir.value) {
+  //   treelist.value.push({
+  //     name: name,
+  //     handle: handle,
+  //     file: handle.kind === "file",
+  //     level: workspace.level + 1,
+  //     parent: workspace,
+  //     expand: false
+  //   });
+  // }
+}
+
+window.debugDirectoryHandle = async () => { 
+  return await get('directory');
+};
 
 async function deleteEntry() {
   if (!editor.entry) return;
